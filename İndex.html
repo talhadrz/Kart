@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Sayı İşleyici</title>
+    <style>
+        #SayiList span {
+            margin: 3px;
+            padding: 5px 10px;
+            background-color: lightblue;
+            border-radius: 10px;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        #contextMenu {
+            position: absolute;
+            display: none;
+            background-color: white;
+            border: 1px solid gray;
+            z-index: 100;
+        }
+
+        #contextMenu div {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        #contextMenu div:hover {
+            background-color: lightgray;
+        }
+    </style>
+</head>
+<body>
+
+<input type="text" id="input" placeholder="Sayı girin" autofocus>
+<button onclick="addNumber()">Ekle</button>
+<button onclick="finish()">Toplamı Göster</button>
+<button onclick="resetList()">Sıfırla</button>
+<button onclick="multiply()">Çarp</button>
+
+<div id="result" style="margin-top: 10px; font-size: 18px; font-weight: bold;"></div>
+<div id="SayiList" style="margin-top: 10px;"></div>
+
+<div id="contextMenu">
+    <div onclick="removeNumber()">Sil</div>
+</div>
+
+<script>
+    let numbers = [];
+    let selectedIndex = -1;
+    const inputElement = document.getElementById("input");
+
+    inputElement.addEventListener("keydown", function (event) {
+        document.getElementById("result").innerText = "";
+        if (event.key === "Enter" && event.shiftKey) {
+            multiply();
+        } else if (event.key === "Enter" && event.altKey) {
+            resetList();
+        } else if (event.key === "Enter") {
+            addNumber();
+        }
+    });
+
+    function addNumber() {
+        let sayi = parseFloat(inputElement.value.trim());
+        if (!isNaN(sayi)) {
+            if (sayi === 0) {
+                finish();
+            } else {
+                numbers.push(sayi);
+                updateNumberList();
+            }
+        }
+        inputElement.value = "";
+        inputElement.focus();
+    }
+
+    function updateNumberList() {
+        const listElement = document.getElementById("SayiList");
+        listElement.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+
+        numbers.forEach((num, index) => {
+            const span = document.createElement("span");
+            span.innerText = num;
+            span.oncontextmenu = function (event) {
+                event.preventDefault();
+                selectedIndex = index;
+                showContextMenu(event.pageX, event.pageY);
+            };
+            fragment.appendChild(span);
+        });
+
+        listElement.appendChild(fragment);
+    }
+
+    function finish() {
+        const sum = numbers.reduce((acc, val) => acc + val, 0);
+        document.getElementById("result").innerText = "Toplam: " + sum.toLocaleString("tr-TR") + " Litre";
+    }
+
+    function resetList() {
+        numbers = [];
+        updateNumberList();
+        document.getElementById("result").innerText = "";
+    }
+
+    function multiply() {
+        const total = numbers.reduce((acc, val) => acc + val, 0);
+        const multiplied = total * 1.18;
+        document.getElementById("result").innerText = "KDV'li Tutar: " + multiplied.toLocaleString("tr-TR") + " Litre";
+    }
+
+    function showContextMenu(x, y) {
+        const menu = document.getElementById("contextMenu");
+        menu.style.left = x + "px";
+        menu.style.top = y + "px";
+        menu.style.display = "block";
+
+        document.addEventListener("click", hideContextMenu);
+    }
+
+    function hideContextMenu() {
+        document.getElementById("contextMenu").style.display = "none";
+        document.removeEventListener("click", hideContextMenu);
+    }
+
+    function removeNumber() {
+        if (selectedIndex !== -1) {
+            numbers.splice(selectedIndex, 1);
+            updateNumberList();
+            hideContextMenu();
+        }
+    }
+</script>
+
+</body>
+</html>
