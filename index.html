@@ -2,138 +2,285 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Sayı İşleyici</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sayı Toplama</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
         #SayiList span {
-            margin: 3px;
+            display: inline-block;
+            margin: 5px;
             padding: 5px 10px;
             background-color: lightblue;
-            border-radius: 10px;
-            display: inline-block;
+            color: darkblue;
             cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        #contextMenu {
+        #SayiList span:hover {
+            background-color: lightgreen;
+            color: darkgreen;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            margin: 5px;
+        }
+
+        button:hover { background-color: #45a049; }
+
+        .btn-update { background-color: yellow; color: black; }
+        .btn-delete { background-color: red; color: white; }
+        .btn-reset { background-color: darkred; color: white; }
+        .btn-multiply { background-color: gold; color: black; }
+        .btn-toplam { background-color: rgb(0, 204, 255); color: black; }
+        .btn-klavuz { background-color: rgb(0, 60, 255); color: black; }
+
+        .btn-start { background-color: #ff7f00; color: white; }
+        .btn-stop { background-color: #ff4747; color: white; }
+        .btn-read { background-color: #1e90ff; color: white; }
+
+        #numberInput {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            width: 200px;
+            margin: 5px;
+        }
+
+        #numberInput:focus {
+            border-color: #4CAF50;
+            box-shadow: 0px 0px 5px rgba(76, 175, 80, 0.5);
+        }
+
+        #result {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            white-space: pre-wrap;
+        }
+
+        .context-menu {
             position: absolute;
+            background: white;
+            border: 1px solid #ccc;
             display: none;
-            background-color: white;
-            border: 1px solid gray;
-            z-index: 100;
+            padding: 5px;
+            z-index: 1000;
+            border-radius: 5px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
         }
 
-        #contextMenu div {
-            padding: 5px 10px;
-            cursor: pointer;
+        .context-menu button:hover {
+            background: #ff4500;
         }
 
-        #contextMenu div:hover {
-            background-color: lightgray;
-        }
+        #SayiList { user-select: none; }
     </style>
 </head>
 <body>
+    <h2>Süt Kartı Hesaplama</h2>
+    <input type="number" id="numberInput" placeholder="Litre Gir" />
+    <button onclick="addNumber()">Ekle</button>
+    <button onclick="finish()" class="btn-toplam">Topla</button>
+    <button onclick="multiply()" class="btn-multiply">Çarp</button>
+    <button onclick="startListening()" class="btn-start">🎤 Dinlemeye Başla</button>
+    <button onclick="stopListening()" class="btn-stop">🛑 Durdur</button>
+    <button onclick="readList()" class="btn-read">🔊 Oku</button>
+    <button onclick="showGuide()" class="btn-klavuz">Tanıt</button>
 
-<input type="text" id="input" placeholder="Sayı girin" autofocus>
-<button onclick="addNumber()">Ekle</button>
-<button onclick="finish()">Toplamı Göster</button>
-<button onclick="resetList()">Sıfırla</button>
-<button onclick="multiply()">Çarp</button>
+    <div id="SayiList"></div>
+    <p id="result"></p>
 
-<div id="result" style="margin-top: 10px; font-size: 18px; font-weight: bold;"></div>
-<div id="SayiList" style="margin-top: 10px;"></div>
+    <div id="contextMenu" class="context-menu">
+        <button onclick="updateSelectedNumber()" class="btn-update">Güncelle</button>
+        <button onclick="deleteSelectedNumber()" class="btn-delete">Sil</button>
+        <button onclick="resetList()" class="btn-reset">Sıfırla</button>
+    </div>
 
-<div id="contextMenu">
-    <div onclick="removeNumber()">Sil</div>
-</div>
+    <script>
+        let toplam = 0;
+        let numbers = [];
+        let selectedIndex = null;
+        const contextMenu = document.getElementById("contextMenu");
+        const inputElement = document.getElementById("numberInput");
 
-<script>
-    let numbers = [];
-    let selectedIndex = -1;
-    const inputElement = document.getElementById("input");
-
-    inputElement.addEventListener("keydown", function (event) {
-        document.getElementById("result").innerText = "";
-        if (event.key === "Enter" && event.shiftKey) {
-            multiply();
-        } else if (event.key === "Enter" && event.altKey) {
-            resetList();
-        } else if (event.key === "Enter") {
-            addNumber();
-        }
-    });
-
-    function addNumber() {
-        let sayi = parseFloat(inputElement.value.trim());
-        if (!isNaN(sayi)) {
-            if (sayi === 0) {
-                finish();
+        function multiply() {
+            let sayi = parseFloat(inputElement.value);
+            if (!isNaN(sayi) && sayi !== 0) {
+                let sonuc = toplam * sayi;
+                document.getElementById("result").innerText = "Çarpım Sonucu: " + sonuc;
             } else {
-                numbers.push(sayi);
+                document.getElementById("result").innerText = "Geçerli Bir Değer Giriniz Çarpmak İçin";
+            }
+        }
+
+        function resetList() {
+            if (confirm("Tüm listeyi silmek istediğinizden emin misiniz?")) {
+                toplam = 0;
+                numbers = [];
+                document.getElementById("result").innerText = "";
                 updateNumberList();
             }
         }
-        inputElement.value = "";
-        inputElement.focus();
-    }
 
-    function updateNumberList() {
-        const listElement = document.getElementById("SayiList");
-        listElement.innerHTML = "";
-        const fragment = document.createDocumentFragment();
+        function addNumber() {
+            let sayi = parseFloat(inputElement.value);
+            if (!isNaN(sayi) && sayi !== 0) {
+                numbers.push(sayi);
+                toplam += sayi;
+                updateNumberList();
+                inputElement.value = "";
+                inputElement.focus();
+            }
+            else if(sayi === 0) {
+                finish();
+            }
+            else {
+                resetList();
+            }
+        }
 
-        numbers.forEach((num, index) => {
-            const span = document.createElement("span");
-            span.innerText = num;
-            span.oncontextmenu = function (event) {
-                event.preventDefault();
-                selectedIndex = index;
-                showContextMenu(event.pageX, event.pageY);
-            };
-            fragment.appendChild(span);
+        function updateNumberList() {
+            let listElement = document.getElementById("SayiList");
+            listElement.innerHTML = "";
+            numbers.forEach((num, index) => {
+                let span = document.createElement("span");
+                span.innerText = num;
+                span.oncontextmenu = function(event) {
+                    event.preventDefault();
+                    selectedIndex = index;
+                    showContextMenu(event.pageX, event.pageY);
+                };
+                listElement.appendChild(span);
+            });
+        }
+
+        function showContextMenu(x, y) {
+            contextMenu.style.left = x + "px";
+            contextMenu.style.top = y + "px";
+            contextMenu.style.display = "block";
+        }
+
+        function updateSelectedNumber() {
+            if (selectedIndex !== null) {
+                let sayi = parseFloat(inputElement.value);
+                if (!isNaN(sayi) && sayi !== 0) {
+                    toplam = toplam - numbers[selectedIndex] + sayi;
+                    numbers[selectedIndex] = sayi;
+                    updateNumberList();
+                    inputElement.value = "";
+                    document.getElementById("result").innerText = "";
+                }
+                else {
+                    document.getElementById("result").innerText = "Geçerli Bir Değer Giriniz Güncellemek İçin";
+                }
+                contextMenu.style.display = "none";
+            }
+        }
+
+        function deleteSelectedNumber() {
+            if (selectedIndex !== null) {
+                if (confirm("Bu sayıyı silmek istediğinize emin misiniz?")) {
+                    toplam -= numbers[selectedIndex];
+                    numbers.splice(selectedIndex, 1);
+                    document.getElementById("result").innerText = "";
+                    updateNumberList();
+                }
+                contextMenu.style.display = "none";
+            }
+        }
+
+        document.addEventListener("click", function() {
+            contextMenu.style.display = "none";
         });
 
-        listElement.appendChild(fragment);
-    }
-
-    function finish() {
-        const sum = numbers.reduce((acc, val) => acc + val, 0);
-        document.getElementById("result").innerText = "Toplam: " + sum.toLocaleString("tr-TR") + " Litre";
-    }
-
-    function resetList() {
-        numbers = [];
-        updateNumberList();
-        document.getElementById("result").innerText = "";
-    }
-
-    function multiply() {
-        const total = numbers.reduce((acc, val) => acc + val, 0);
-        const multiplied = total * 1.18;
-        document.getElementById("result").innerText = "KDV'li Tutar: " + multiplied.toLocaleString("tr-TR") + " Litre";
-    }
-
-    function showContextMenu(x, y) {
-        const menu = document.getElementById("contextMenu");
-        menu.style.left = x + "px";
-        menu.style.top = y + "px";
-        menu.style.display = "block";
-
-        document.addEventListener("click", hideContextMenu);
-    }
-
-    function hideContextMenu() {
-        document.getElementById("contextMenu").style.display = "none";
-        document.removeEventListener("click", hideContextMenu);
-    }
-
-    function removeNumber() {
-        if (selectedIndex !== -1) {
-            numbers.splice(selectedIndex, 1);
-            updateNumberList();
-            hideContextMenu();
+        function finish() {
+            document.getElementById("result").innerText = "Toplam: " + toplam.toLocaleString("tr-TR") + " Litre";
         }
-    }
-</script>
 
+        inputElement.addEventListener("keydown", function(event) {
+            document.getElementById("result").innerText = "";
+            if (event.key === "Enter") {
+                addNumber();
+            } 
+        });
+
+        function showGuide() {
+            document.getElementById("result").innerText =
+`Bu uygulama, süt hesaplamalarını yapmanızı sağlar. Kullanımı şu şekildedir:
+
+### Bilgisayar Kullanımı:
+1. **Sayı Ekleme**: 'Ekle' butonuna tıklayarak veya 'Enter' tuşuna basarak sayı ekleyin.
+2. **Toplam Hesaplama**: 'Topla' butonuna veya '0' yazıp 'Enter'a basarak toplamı hesaplayın.
+3. **Çarpma**: 'Çarp' butonuyla toplamı, girdiğiniz sayı ile çarpabilirsiniz.
+4. **Sayı Güncelleme**: Sayıya tıklayıp yeni değeri yazın ve 'Güncelle'ye tıklayın.
+5. **Sayı Silme**: Sayıya sağ tıklayarak 'Sil' seçeneğini kullanın.
+6. **Listeyi Sıfırlama**: 'Sıfırla' butonuyla veya boşken 'Enter' tuşuna basarak listeyi temizleyin.
+7. **Oku**: Toplam değeri size sesli olarak okur.
+8. **Dinle**: Sesli komutla sayıları eklemenizi sağlar.
+9. **Durdur**: Sesli komut dinlemeyi durdurur.
+
+### Telefon Kullanımı:
+1. **Sayı Ekleme**: 'Ekle' butonuna veya 'Enter'a tıklayarak sayı ekleyin.
+2. **Toplam Hesaplama**: 'Topla' butonuna basarak hesaplayın.
+`;
+        }
+
+        function readList() {
+            const synth = window.speechSynthesis;
+            if (synth.speaking) {
+                synth.cancel();
+            }
+            const msg = new SpeechSynthesisUtterance("Toplam: " + toplam + " litre");
+            msg.lang = "tr-TR";
+            synth.speak(msg);
+        }
+
+        let recognition;
+        function startListening() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert("Tarayıcınız ses tanıma özelliğini desteklemiyor.");
+                return;
+            }
+
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = "tr-TR";
+            recognition.continuous = true;
+
+            recognition.onresult = function(event) {
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        let result = event.results[i][0].transcript.trim();
+                        let sayi = parseFloat(result.replace(",", "."));
+                        if (!isNaN(sayi)) {
+                            inputElement.value = sayi;
+                            addNumber();
+                        }
+                    }
+                }
+            };
+
+            recognition.start();
+        }
+
+        function stopListening() {
+            if (recognition) {
+                recognition.stop();
+            }
+        }
+    </script>
 </body>
 </html>
